@@ -1,0 +1,14 @@
+// Copyright (c)  YISH. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+use ast::Table;
+use ast::Identifier;
+use ast::SetStatement;
+use ast::JoinNode;
+
+#[derive(Clone, Debug)]
+pub enum TableView {
+    Table(Table, Option<Identifier>),
+    Set(Box<SetStatement>, Identifier),
+    Join(Box<JoinNode>)
+}

@@ -1,0 +1,558 @@
+// Copyright (c)  YISH. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+use std::str::FromStr;
+use ast::*;
+use lexer::{Token, Position, SpannedError};
+
+//grammar<'input>(text: &'input ParserSource);
+grammar<'input>;
+
+extern {
+
+    type Location = Position;
+    type Error = SpannedError;
+
+    enum Token<'input> {
+        "identifier" => Token::Identifier(<&'input str>),
+        "string literal" => Token::StringLiteral(<String>),
+        "int literal" => Token::IntLiteral(<i64>),
+        "float literal" => Token::FloatLiteral(<f64>),
+        "byte literal" => Token::ByteLiteral(<u8>),
+        "documentation comment" => Token::DocComment(_),
+
+        "text" => Token::Text,
+        "int" => Token::Int,
+        "float" => Token::Float,
+        "numeric" => Token::Numeric,
+        "timestamp" => Token::Timestamp,
+        "datetime" => Token::Datetime,
+        "date" => Token::Date,
+        "time" => Token::Time,
+
+        "(" => Token::LeftParen,
+        ")" => Token::RightParen,
+        "|" => Token::Pipe,
+        "||" => Token::DoublePipe,
+        "," => Token::Comma,
+        ":" => Token::Colon,
+        "::" => Token::DoubleColon,
+        "." => Token::Period,
+        "=" => Token::Equal,
+        "!=" => Token::NotEqual,
+        "<" => Token::Less,
+        "<=" => Token::LessOrEqual,
+        ">" => Token::Greater,
+        ">=" => Token::GreaterOrEqual,
+        "+" => Token::PlusSign,
+        "-" => Token::MinusSign,
+        "*" => Token::Asterisk,
+        "/" => Token::Solidus,
+
+        "all" => Token::All,
+        "and" => Token::And,
+        "as" => Token::As,
+        "asc" => Token::Asc,
+        "both" => Token::Both,
+        "by" => Token::By,
+        "case" => Token::Case,
+        "cross" => Token::Cross,
+        "desc" => Token::Desc,
+        "distinct" => Token::Distinct,
+        "dual" => Token::Dual,
+        "else" => Token::Else,
+        "end" => Token::End,
+        "except" => Token::Except,
+        "from" => Token::From,
+        "full" => Token::Full,
+        "group" => Token::Group,
+        "having" => Token::Having,
+        "in" => Token::In,
+        "is" => Token::Is,
+        "inner" => Token::Inner,
+        "intersect" => Token::Intersect,
+        "join" => Token::Join,
+        "leading" => Token::Leading,
+        "left" => Token::Left,
+        "limit" => Token::Limit,
+        "minus" => Token::Minus,
+        "not" => Token::Not,
+        "null" => Token::Null,
+        "offset" => Token::Offset,
+        "on" => Token::On,
+        "or" => Token::Or,
+        "order" => Token::Order,
+        "outer" => Token::Outer,
+        "right" => Token::Right,
+        "select" => Token::Select,
+        "skip" => Token::Skip,
+        "then" => Token::Then,
+        "trailing" => Token::Trailing,
+        "union" => Token::Union,
+        "unique" => Token::Unique,
+        "when" => Token::When,
+        "where" => Token::Where,
+
+        "abs" => Token::Abs,
+        "avg" => Token::Avg,
+        "btrim" => Token::BTrim,
+        "cast" => Token::Cast,
+        "ceil" => Token::Ceil,
+        "ceiling" => Token::Ceiling,
+        "coalesce" => Token::Coalesce,
+        "cos" => Token::Cos,
+        "concat" => Token::Concat,
+        "count" => Token::Count,
+        "countif" => Token::CountIf,
+        "day" => Token::Day,
+        "day_add" => Token::DayAdd,
+        "day_sub" => Token::DaySub,
+        "decode" => Token::Decode,
+        "dense_rank" => Token::DenseRank,
+        "extract" => Token::Extract,
+        "floor" => Token::Floor,
+        "hour" => Token::Hour,
+        "hour_add" => Token::HourAdd,
+        "hour_sub" => Token::HourSub,
+        "length" => Token::Length,
+        "log" => Token::Log,
+        "log10" => Token::Log10,
+        "lower" => Token::Lower,
+        "lpad" => Token::LPad,
+        "ltrim" => Token::LTrim,
+        "max" => Token::Max,
+        "maxif" => Token::MaxIf,
+        "median" => Token::Median,
+        "medianif" => Token::MedianIf,
+        "min" => Token::Min,
+        "minif" => Token::MinIf,
+        "minute" => Token::Minute,
+        "minute_add" => Token::MinuteAdd,
+        "minute_sub" => Token::MinuteSub,
+        "month" => Token::Month,
+        "month_add" => Token::MonthAdd,
+        "month_sub" => Token::MonthSub,
+        "now" => Token::Now,
+        "nvl" => Token::Nvl,
+        "pad_left" => Token::PadLeft,
+        "pad_right" => Token::PadRight,
+        "pow" => Token::Pow,
+        "power" => Token::Power,
+        "replace" => Token::Replace,
+        "reverse" => Token::Reverse,
+        "rank" => Token::Rank,
+        "round" => Token::Round,
+        "sign" => Token::Sign,
+        "sin" => Token::Sin,
+        "sqrt" => Token::Sqrt,
+        "stddev" => Token::Stddev,
+        "rpad" => Token::RPad,
+        "rtrim" => Token::RTrim,
+        "second" => Token::Second,
+        "second_add" => Token::SecondAdd,
+        "second_sub" => Token::SecondSub,
+        "substr" => Token::Substr,
+        "substring" => Token::Substring,
+        "sum" => Token::Sum,
+        "sumif" => Token::SumIf,
+        "tan" => Token::Tan,
+        "trim" => Token::Trim,
+        "trim_start" => Token::TrimStart,
+        "trim_end" => Token::TrimEnd,
+        "upper" => Token::Upper,
+        "year" => Token::Year,
+        "year_add" => Token::YearAdd,
+        "year_sub" => Token::YearSub
+    }
+}
+
+pub Statement: Statement = {
+    SetStatement => Statement::Set(<>)
+}
+
+pub Expression: Expression = {
+    Boxed<Expression> Add Boxed<ExpressionFactor> => Expression::Arithmetic(ArithmeticExpression::new(<>)),
+    Boxed<Expression> Sub Boxed<ExpressionFactor> => Expression::Arithmetic(ArithmeticExpression::new(<>)),
+    ExpressionFactor
+}
+
+pub Predicate: PredicateExpression = {
+    PredicateNextTier,
+    Boxed<Predicate> Or Boxed<PredicateNextTier> => PredicateExpression::Logical(LogicalExpression::new(<>))
+}
+
+SetStatement: Box<SetStatement> = {
+    <set:SetStatementNextTier> <skip:SkipClause> => SetStatement::Pagination(PaginationStatement::new(set, Option::Some(skip), Option::None).into()).into(),
+    <set:SetStatementNextTier> <limit:LimitClause> => SetStatement::Pagination(PaginationStatement::new(set, Option::None, Option::Some(limit)).into()).into() ,
+    <set:SetStatementNextTier> <skip:SkipClause> <limit:LimitClause> => SetStatement::Pagination(PaginationStatement::new(set, Option::Some(skip), Option::Some(limit)).into()).into(),
+    SetStatementNextTier
+}
+
+SetStatementNextTier: Box<SetStatement> = {
+    <SetStatementNextTier> "intersect" <SetStatementTerm> => SetStatement::Intersect(<>).into(),
+    <SetStatementNextTier> "union" <SetStatementTerm> => SetStatement::Union(<>).into(),
+    <SetStatementNextTier> "union" "all" <SetStatementTerm> => SetStatement::UnionAll(<>).into(),
+    <SetStatementNextTier> "minus" <SetStatementTerm> => SetStatement::Minus(<>).into(),
+    <SetStatementNextTier> "except" <SetStatementTerm> => SetStatement::Minus(<>).into(),
+    SetStatementTerm
+}
+
+SetStatementTerm: Box<SetStatement> = {
+    SelectStatement => SetStatement::Select(<>).into(),
+    "(" <SetStatement> ")"
+}
+
+
+
+SelectStatement: SelectStatement = {
+   "select" <select_type:SelectType?> <elements:Comma<SelectElement>> => SelectStatement::new(select_type, elements, Option::None, Option::None, Option::None, Option::None),
+   "select" <select_type:SelectType?> <elements:Comma<SelectElement>> "from" "dual" => SelectStatement::new(select_type, elements, Option::None, Option::None, Option::None, Option::None),
+   "select" <select_type:SelectType?> <elements:Comma<SelectElement>> <f:FromClause> => SelectStatement::new(select_type, elements, Option::Some(f.0), f.1, f.2, f.3),
+}
+
+FromClause = {
+    "from" <Comma<TableView>> <("where" <Boxed<Predicate>>)?> <GroupByClause?> <("order" "by" <Comma<SortingElement>>)?>,
+}
+
+
+GroupByClause: GroupElements = {
+    "group" "by" <Comma<Boxed<Expression>>> <("having" <Boxed<Predicate>>)?> => GroupElements::new(<>)
+}
+
+
+LimitClause: Box<Expression> = {
+    "limit" <Boxed<Expression>>
+}
+
+SkipClause: Box<Expression> = {
+    "skip" <Boxed<Expression>>
+}
+
+Table: Table = {
+    Identifier => Table::new(<>, Option::None, Option::None),
+    <schema:Identifier> "." <table:Identifier> => Table::new(table, Option::Some(schema), Option::None),
+    <database:Identifier> "." <schema:Identifier> "." <table:Identifier> => Table::new(table, Option::Some(schema), Option::Some(database))
+}
+
+TableView: Box<TableView> = {
+    <TableView> <JoinType> <TableViewTerm> "on" <Boxed<Predicate>> => TableView::Join(JoinNode::new(<>).into()).into(),
+    TableViewTerm
+}
+
+
+TableViewTerm: Box<TableView> = {
+    <Table> <Alias?> => TableView::Table(<>).into(),
+    "(" <SetStatement> ")" <Alias> => TableView::Set(<>).into()
+}
+
+JoinType: JoinType = {
+    "join" => JoinType::None,
+    "inner" "join" => JoinType::Inner,
+    "left" "join" => JoinType::Left,
+    "right" "join" => JoinType::Right,
+    "left" "outer" "join" => JoinType::LeftOuter,
+    "right" "outer" "join" => JoinType::RightOuter,
+    "cross" "join" => JoinType::Cross,
+    "full" "join" => JoinType::Full,
+}
+
+SelectElement: SelectElement = {
+    <Boxed<Expression>> <Alias?> => SelectElement::Expression(<>),
+    <(<Identifier> ".")?> "*" => SelectElement::Asterisk(<>),
+}
+
+SortingElement: SortingElement = {
+    <Boxed<Expression>> <SortingDirection?> => SortingElement::new(<>)
+}
+
+SortingDirection: SortingDirection = {
+    "asc" => SortingDirection::Ascending,
+    "desc" => SortingDirection::Descending
+}
+
+Alias: Identifier = {
+    Identifier,
+    "as" <Identifier>,
+}
+
+SelectType: SelectType = {
+    "all" => SelectType::All,
+    "distinct" => SelectType::Distinct,
+    "unique" => SelectType::Unique
+}
+
+ExpressionFactor: Expression = {
+    Boxed<ExpressionFactor> Mul Boxed<ExpressionUnary> => Expression::Arithmetic(ArithmeticExpression::new(<>)),
+    Boxed<ExpressionFactor> Div Boxed<ExpressionUnary> => Expression::Arithmetic(ArithmeticExpression::new(<>)),
+    ExpressionUnary
+}
+
+ExpressionUnary: Expression = {
+    "+" <Boxed<ExpressionTypeCast>> => Expression::Unary(UnaryExpression::Plus(<>)) ,
+    "-" <Boxed<ExpressionTypeCast>> => Expression::Unary(UnaryExpression::Minus(<>)),
+    ExpressionTypeCast
+}
+
+ExpressionTypeCast: Expression = {
+    <Boxed<ExpressionAtom>> "::" <DataType> => CastFn::new(<>).into(),
+    ExpressionAtom
+}
+
+ExpressionAtom: Expression = {
+    Constant => Expression::Constant(<>),
+    Column => Expression::Column(<>),
+    Function => Expression::Function(<>),
+    CaseWhen => Expression::CaseWhen(<>),
+    Variable => Expression::Variable(<>),
+    "(" <Expression> ")"
+}
+
+Variable: Variable = {
+    ":" <Identifier> => Variable::new(<>)
+}
+
+Mul: ArithmeticOperator = {
+    "*" => ArithmeticOperator::Mul
+}
+Div: ArithmeticOperator = {
+    "/" => ArithmeticOperator::Div
+}
+Add: ArithmeticOperator = {
+    "+" => ArithmeticOperator::Add
+}
+Sub: ArithmeticOperator = {
+    "-" => ArithmeticOperator::Sub
+}
+
+PredicateNextTier: PredicateExpression = {
+    PredicateTerm,
+    Boxed<PredicateNextTier> And Boxed<PredicateTerm> => PredicateExpression::Logical(LogicalExpression::new(<>)).into(),
+}
+
+And: LogicalOperator = {
+    "and" => LogicalOperator::And
+}
+Or: LogicalOperator = {
+    "or" => LogicalOperator::Or
+}
+
+PredicateTerm: PredicateExpression = {
+    Boxed<Expression> ComparisonOperator Boxed<Expression> => PredicateExpression::Comparison(ComparisonExpression::new(<>)),
+    "not" "(" <Boxed<Predicate>> ")" => PredicateExpression::Not(NotExpression::new(<>)),
+    <Boxed<Expression>> "is" "null" => PredicateExpression::IsNull(IsNullExpression::new(<>)),
+    <Boxed<Expression>> "is" "not" "null" => PredicateExpression::IsNotNull(IsNotNullExpression::new(<>)),
+    <Boxed<Expression>> "in" "(" <InElements> ")" => PredicateExpression::In(InExpression::new(<>)),
+    <Boxed<Expression>> "not" "in" "(" <InElements> ")" => PredicateExpression::NotIn(NotInExpression::new(<>)),
+    "(" <Predicate> ")",
+}
+
+InElements: InElements = {
+    Comma<Boxed<Expression>> => InElements::Values(<>),
+    SetStatement => InElements::Set(<>)
+}
+
+CaseWhen: CaseWhenExpression = {
+    SimpleCaseWhen => CaseWhenExpression::Simple(<>),
+    SearchedCaseWhen => CaseWhenExpression::Searched(<>),
+}
+
+SimpleCaseWhen: SimpleCaseWhenExpression = {
+    "case" <Boxed<Expression>> <SimpleMatchPart+> <CaseWhenElsePart?> "end" => SimpleCaseWhenExpression::new(<>)
+}
+
+SimpleMatchPart: (Box<Expression>, Box<Expression>) = {
+    "when" <Boxed<Expression>> "then" <Boxed<Expression>>
+}
+
+SearchedCaseWhen: SearchedCaseWhenExpression = {
+    "case" <SearchedCaseWhenPart+> <CaseWhenElsePart?> "end" => SearchedCaseWhenExpression::new(<>)
+}
+
+
+SearchedCaseWhenPart: (Box<PredicateExpression>, Box<Expression>) = {
+    "when" <Boxed<Predicate>> "then" <Boxed<Expression>>,
+}
+
+CaseWhenElsePart: Box<Expression> = {
+    "else" <Boxed<Expression>>,
+}
+
+ComparisonOperator: ComparisonOperator = {
+    "=" => ComparisonOperator::Equal,
+    "!=" => ComparisonOperator::NotEqual,
+    "<" => ComparisonOperator::Less,
+    ">" => ComparisonOperator::Greater,
+    "<=" => ComparisonOperator::LessOrEqual,
+    ">=" => ComparisonOperator::GreaterOrEqual
+}
+
+Column: Column = {
+    Identifier => Column::new(<>, Option::None, Option::None),
+    <table:Identifier> "." <column:Identifier> => Column::new(column, Option::Some(table), Option::None),
+    <schema:Identifier> "." <table:Identifier> "." <column:Identifier> => Column::new(column, Option::Some(table), Option::Some(schema)),
+}
+
+Function: Function = {
+    AggregateFn => Function::Aggregate(<>),
+    StringFn => Function::String(<>),
+    CastFn => Function::Cast(<>),
+    NvlFn => Function::Nvl(<>),
+    DatetimeFn => Function::Datetime(<>),
+    NumericFn => Function::Numeric(<>),
+    "now" "(" ")" => Function::Now,
+    "coalesce" "(" <Comma<Boxed<Expression>>> ")" => Function::Coalesce(CoalesceFn::new(<>))
+}
+
+AggregateFn: AggregateFn = {
+    "avg" "(" <AggregateType?> <Boxed<Expression>> ")" => AggregateFn::Avg(AvgFn::new(<>)),
+    "count" "(" <AggregateType?> <Boxed<Expression>> ")" => AggregateFn::Count(CountFn::new(<>)),
+    "max" "(" <AggregateType?> <Boxed<Expression>> ")" => AggregateFn::Max(MaxFn::new(<>)).into(),
+    "median" "(" <AggregateType?> <Boxed<Expression>> ")" => AggregateFn::Median(MedianFn::new(<>)),
+    "min" "(" <AggregateType?> <Boxed<Expression>> ")" => AggregateFn::Min(MinFn::new(<>)),
+    "sum" "(" <AggregateType?> <Boxed<Expression>> ")" => AggregateFn::Sum(SumFn::new(<>)),
+    "stddev" "(" <AggregateType?> <Boxed<Expression>> ")" => AggregateFn::Stddev(StddevFn::new(<>)),
+}
+
+AggregateType: AggregateType = {
+    "all" => AggregateType::All,
+    "distinct" => AggregateType::Distinct,
+    "unique" => AggregateType::Unique
+}
+
+StringFn: StringFn = {
+    "concat" "(" <Comma<Boxed<Expression>>> ")" => StringFn::Concat(ConcatFn::new(<>)),
+    "left" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => StringFn::Left(LeftFn::new(<>)),
+    "length" "(" <Boxed<Expression>> ")"  => StringFn::Length(LengthFn::new(<>)),
+    "lower" "(" <Boxed<Expression>> ")" => StringFn::Lower(LowerFn::new(<>)),
+    "pad_left" "(" <Boxed<Expression>> "," <Boxed<Expression>> <("," <Boxed<Expression>>)?> ")" => StringFn::PadLeft(PadLeftFn::new(<>)),
+    "lpad" "(" <Boxed<Expression>> "," <Boxed<Expression>> <("," <Boxed<Expression>>)?> ")" => StringFn::PadLeft(PadLeftFn::new(<>)),
+    "pad_right" "(" <Boxed<Expression>> "," <Boxed<Expression>> <("," <Boxed<Expression>>)?> ")" => StringFn::PadRight(PadRightFn::new(<>)),
+    "rpad" "(" <Boxed<Expression>> "," <Boxed<Expression>> <("," <Boxed<Expression>>)?> ")" => StringFn::PadRight(PadRightFn::new(<>)),
+    "replace" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => StringFn::Replace(ReplaceFn::new(<>)),
+    "reverse" "(" <Boxed<Expression>> ")" => StringFn::Reverse(ReverseFn::new(<>)),
+    "right" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => StringFn::Right(RightFn::new(<>)),
+    "substr" "(" <Boxed<Expression>> "," <Boxed<Expression>> <("," <Boxed<Expression>> )?>  ")" => StringFn::Substr(SubstrFn::new(<>)),
+    "substring" "(" <Boxed<Expression>> "," <Boxed<Expression>> <("," <Boxed<Expression>> )?> ")" => StringFn::Substr(SubstrFn::new(<>)),
+    TrimFn => StringFn::Trim(<>),
+    "upper" "(" <Boxed<Expression>> ")"  => StringFn::Upper(UpperFn::new(<>))
+}
+
+TrimFn: TrimFn = {
+    "btrim" "(" <Boxed<Expression>> <("," <Boxed<Expression>>)?> ")" => TrimFn::new(<>, TrimType::Both),
+    "ltrim" "(" <Boxed<Expression>> <("," <Boxed<Expression>>)?> ")" => TrimFn::new(<>, TrimType::Leading),
+    "rtrim" "(" <Boxed<Expression>> <("," <Boxed<Expression>>)?> ")" => TrimFn::new(<>, TrimType::Trailing),
+    "trim_start" "(" <Boxed<Expression>> <("," <Boxed<Expression>>)?> ")" => TrimFn::new(<>, TrimType::Leading),
+    "trim_end" "(" <Boxed<Expression>> <("," <Boxed<Expression>>)?> ")" => TrimFn::new(<>, TrimType::Trailing),
+    "trim" "(" <Boxed<Expression>> <("," <Boxed<Expression>>)?> ")" => TrimFn::new(<>, TrimType::Both),
+    "trim" "(" <trim_type:TrimType> <trim_text:Boxed<Expression>?> "from" <expr:Boxed<Expression>> ")" => TrimFn::new(expr, trim_text, trim_type),
+}
+
+TrimType: TrimType = {
+    "both" => TrimType::Both,
+    "leading" => TrimType::Leading,
+    "trailing" => TrimType::Trailing,
+}
+
+NumericFn: NumericFn = {
+    "abs" "(" <Boxed<Expression>> ")" => NumericFn::Abs(AbsFn::new(<>)),
+    "ceil" "(" <Boxed<Expression>> ")" => NumericFn::Ceil(CeilFn::new(<>)),
+    "ceiling" "(" <Boxed<Expression>> ")" => NumericFn::Ceil(CeilFn::new(<>)),
+    "cos" "(" <Boxed<Expression>> ")" => NumericFn::Cos(CosFn::new(<>)),
+    "dense_rank" "(" <Boxed<Expression>> <("," <SortingDirection>)?> ")" => NumericFn::DenseRank(DenseRankFn::new(<>)),
+    "floor" "(" <Boxed<Expression>> ")" => NumericFn::Floor(FloorFn::new(<>)),
+    "log10" "(" <Boxed<Expression>> ")" => NumericFn::Log10(Log10Fn::new(<>)),
+    "log" "(" <(<Boxed<Expression>> ",")?> <Boxed<Expression>> ")" => NumericFn::Log(LogFn::new(<>)),
+    "pow" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => NumericFn::Pow(PowFn::new(<>)),
+    "power" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => NumericFn::Pow(PowFn::new(<>)),
+    "rank" "(" <Boxed<Expression>> <("," <SortingDirection>)?> ")" => NumericFn::Rank(RankFn::new(<>)),
+    "round" "(" <Boxed<Expression>> <("," <Boxed<Expression>>)?> ")" => NumericFn::Round(RoundFn::new(<>)),
+    "sign" "(" <Boxed<Expression>> ")" => NumericFn::Sign(SignFn::new(<>)),
+    "sin" "(" <Boxed<Expression>> ")" => NumericFn::Sin(SinFn::new(<>)),
+    "sqrt" "(" <Boxed<Expression>> ")" => NumericFn::Sqrt(SqrtFn::new(<>)),
+    "tan" "(" <Boxed<Expression>> ")" => NumericFn::Tan(TanFn::new(<>)),
+}
+
+DatetimeFn: DatetimeFn = {
+    "day_add" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::DayAdd(DayAddFn::new(<>)),
+    "day_sub" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::DaySub(DaySubFn::new(<>)),
+    "hour_add" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::HourAdd(HourAddFn::new(<>)),
+    "hour_sub" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::HourSub(HourSubFn::new(<>)),
+    "minute_add" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::MinuteAdd(MinuteAddFn::new(<>)),
+    "minute_sub" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::MinuteSub(MinuteSubFn::new(<>)),
+    "month_add" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::MonthAdd(MonthAddFn::new(<>)),
+    "month_sub" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::MonthSub(MonthSubFn::new(<>)),
+    "second_add" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::SecondAdd(SecondAddFn::new(<>)),
+    "second_sub" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::SecondSub(SecondSubFn::new(<>)),
+    "year_add" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::YearAdd(YearAddFn::new(<>)),
+    "year_sub" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => DatetimeFn::YearSub(YearSubFn::new(<>)),
+    "extract" "(" <DatetimeType> "from" <Boxed<Expression>> ")" => DatetimeFn::Extract(ExtractFn::new(<>)),
+    <DatetimeType> "(" <Boxed<Expression>> ")" => DatetimeFn::Extract(ExtractFn::new(<>))
+}
+
+DatetimeType: DatetimeType = {
+    "year" => DatetimeType::Year,
+    "month" => DatetimeType::Month,
+    "day" => DatetimeType::Day,
+    "hour" => DatetimeType::Hour,
+    "minute" => DatetimeType::Minute,
+    "second" => DatetimeType::Second,
+}
+
+NvlFn: Box<NvlFn> = {
+    "nvl" "(" <Boxed<Expression>> "," <Boxed<Expression>> ")" => NvlFn::new(<>).into()
+}
+
+CastFn: Box<CastFn> = {
+    "cast" "(" <Boxed<Expression>> "as" <DataType>  ")" => CastFn::new(<>).into(),
+//    <Expression> DOUBLE_COLON <DataType>  RIGHT_PAREN => CastFn::new(<>).into(),
+}
+
+DataType: DataType = {
+    NativeDataType
+}
+
+NativeDataType: DataType = {
+   "text" => DataType::new(String::from_str("text").unwrap()),
+   "int" => DataType::new(String::from_str("int").unwrap()),
+   "float" => DataType::new(String::from_str("float").unwrap()),
+   "numeric" => DataType::new(String::from_str("numeric").unwrap()),
+   "timestamp" => DataType::new(String::from_str("timestamp").unwrap()),
+   "datetime" => DataType::new(String::from_str("datetime").unwrap()),
+   "date" => DataType::new(String::from_str("date").unwrap()),
+   "time" => DataType::new(String::from_str("time").unwrap()),
+}
+
+Constant: ConstantValue = {
+    NumericValue => ConstantValue::Numeric(<>),
+    StringValue => ConstantValue::String(<>),
+    "null" =>  ConstantValue::Null
+}
+
+StringValue: StringValue = {
+    "string literal" => <>.into()
+}
+
+NumericValue: NumericValue = {
+    "int literal" => <>.into(),
+    "float literal" => <>.into()
+}
+
+Identifier: Identifier = {
+    "identifier" => <>.into()
+}
+
+Comma<T>: Vec<T> = {
+    <v:(<T> ",")*> <e:T?> => match e {
+        None=> v,
+        Some(e) => {
+            let mut v = v;
+            v.push(e);
+            v
+        }
+    }
+}
+
+Boxed<T>: Box<T> = {
+    T => Box::new(<>)
+}
+
