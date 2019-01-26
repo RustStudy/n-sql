@@ -1,5 +1,5 @@
 // auto-generated: "lalrpop 0.16.3"
-// sha256: 7675214110c51e6545b2f066d722aa36deb8dd28d187aafa65b4a3c1cc4a9d1
+// sha256: 38512c9d8217aef6299099fe4991887a3ff47efafbed6c3e3a55b0d2fde28e9f
 use std::str::FromStr;
 use ast::*;
 use lexer::{Token, Position, SpannedError};
